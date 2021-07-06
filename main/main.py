@@ -20,7 +20,7 @@ GM = G*M # gravitational parameter
 # Initial Values
 E = -70. # energy
 L = 50. # angular momentum
-omega = 0. #np.pi/3 # argument of the pericenter
+omega = np.pi/3 # argument of the pericenter
 
 
 
@@ -65,12 +65,13 @@ def ellipse(p, ecc, f):
   return x, y, r
 
 
-# Grid definition
-n = 10000 # number of nodes
-time = np.linspace(0., 10., n)
-dt = time[1] - time[0] # timestep
-position = np.zeros([n,3])
-angle = np.zeros(n)
+# Time grid definition
+time = np.zeros(1)
+dt = 0.001 # timestep
+n = 10000 # number of steps
+
+position = np.zeros([1,3])
+angle = np.zeros(1)
 
 # Initial condition in the grid
 angle[0] = 0.
@@ -79,18 +80,19 @@ position[0] = ellipse(semilatus(L), eccentricity(E,L), angle[0])
 
 
 # Main Loop
-for i in range(n-1):
+for i in range(n):
   ecc = eccentricity(E,L)
   p = semilatus(L)
   # Check for ellipse's eccentricity
   if ecc<0 or ecc>=1:
     print('The eccentricity is not that of an ellipse.')
     break
-  angle[i+1] = phi(L, position[i,2], angle[i])
-  position[i+1] = ellipse(p, ecc, angle[i+1])
+  time = np.append(time, time[len(time)-1] + dt)
+  angle = np.append(angle, phi(L, position[i,2], angle[i]))
+  position = np.append(position, [ellipse(p, ecc, angle[i+1])], axis=0)
   # First estimate for fusion of the binary system
   if position[i+1,2]<1E5*r_crit:
-    print('The binary system has merged at time {:.0f}'.format(i))
+    print('The binary system has merged after {:.3f} years'.format(time[i]))
     break
   #Energy and Angular Momentum lose model 
   L = L-0.005
@@ -101,7 +103,7 @@ for i in range(n-1):
 
 #print(ecc(E,L), a(E))
 #print(np.sqrt(2*E+2*GM))
-#print(dt)
+#print(dt, n)
 #print(E,L)
 
 u= 8270
