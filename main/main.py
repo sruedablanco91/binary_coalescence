@@ -67,8 +67,8 @@ def ellipse(p, ecc, f):
 
 # Time grid definition
 time = np.zeros(1)
-dt = 0.001 # timestep
-n = 10000 # number of steps
+dt = 1E-4 # timestep
+n = 200000 # number of steps
 
 position = np.zeros([1,3])
 angle = np.zeros(1)
@@ -83,34 +83,31 @@ position[0] = ellipse(semilatus(L), eccentricity(E,L), angle[0])
 for i in range(n):
   ecc = eccentricity(E,L)
   p = semilatus(L)
-  # Check for ellipse's eccentricity
-  if ecc<0 or ecc>=1:
-    print('The eccentricity is not that of an ellipse.')
+  # Check for the merge of the binary system
+  if position[i,2]<r_crit:
+    print('The binary system has merged after {:.5f} years'.format(time[i]))
     break
+  # Check for ellipse's eccentricity
+  if ecc<0. or ecc>=1.:
+    print('\n The eccentricity is not that of an ellipse.')
+    print('\n Model stopped after {:.5f} years'.format(time[i]) )
+    break
+
   time = np.append(time, time[len(time)-1] + dt)
   angle = np.append(angle, phi(L, position[i,2], angle[i]))
   position = np.append(position, [ellipse(p, ecc, angle[i+1])], axis=0)
-  # First estimate for fusion of the binary system
-  if position[i+1,2]<1E5*r_crit:
-    print('The binary system has merged after {:.3f} years'.format(time[i]))
-    break
+  # Check the separation radius to change the time-step
+  if position[i+1,2]<1E-1:
+    dt = 1E-5 # diminish the time-step
+  else:
+    dt = 1E-4 # time-step back to the original
   #Energy and Angular Momentum lose model 
-  L = L-0.005
-  E = E-0.005
+  L = L-5*dt
+  E = E-5*dt
 
 
-#print(r_crit)
-
-#print(ecc(E,L), a(E))
-#print(np.sqrt(2*E+2*GM))
-#print(dt, n)
-#print(E,L)
-
-u= 8270
-w = 8300
 plt.figure(figsize=(10,7))
 plt.plot(position[:,0],position[:,1])
-#plt.plot(position[u:w,0],position[u:w,1])
 plt.axhline(color='black',alpha=0.3)
 plt.axvline(color='black',alpha=0.3)
 plt.xlabel(r'$x$')
