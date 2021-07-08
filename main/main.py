@@ -1,29 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-G = 4*np.pi**2 # Gravitational constant
-c = 63197.8 # Speed of light in units of au/yr
-
-# Masses  
-m1 = 10. # Solar masses
-m2 = 7.  # Solar masses
-
-# Radii
-r1 = 2*G*m1/c**2 # Schwarzschild radius for m1
-r2 = 2*G*m2/c**2 # Schwarzschild radius for m2
-r_merge = r1 + r2 # Separation distance for fusion/collision
-
-M = m1 + m2 # Total mass (solar masses)
-mu = m1*m2/M # Reduced mass
-GM = G*M # gravitational parameter
-
-
-# Initial Values
-E = -70. # energy
-L = 50. # angular momentum
-omega = np.pi/3 # argument of the pericenter
-
-
 
 # Orbital parameters
 def semilatus(L):
@@ -62,27 +39,53 @@ def ellipse(p, ecc, f):
 
 # Quadrupole tensor components
 def qij(x):
+  '''
+  Returns the components of the 3x3 quadrupole tensor
+  '''
   return mu*(np.outer(x,x) - np.identity(3)*np.dot(x,x)/3)
 
-# Time grid definition
-time = np.zeros(1)
-dt = 1E-4 # timestep
-n = 80000 # number of steps
+G = 4*np.pi**2 # Gravitational constant
+c = 63197.8 # Speed of light in units of au/yr
 
-position = np.zeros([1,4])
-angle = np.zeros(1)
-q = np.zeros([3,3])
+# Masses  
+m1 = 10. # Solar masses
+m2 = 7.  # Solar masses
+
+M = m1 + m2 # Total mass (solar masses)
+mu = m1*m2/M # Reduced mass
+GM = G*M # gravitational parameter
+
+# Radii
+r1 = 2*G*m1/c**2 # Schwarzschild radius for m1
+r2 = 2*G*m2/c**2 # Schwarzschild radius for m2
+r_merge = r1 + r2 # Separation distance for fusion/collision
+
+# Initial Values
+E = -70. # energy
+L = 50. # angular momentum
+omega = np.pi/3 # argument of the pericenter
+
+
+# Time grid definition
+n = 50000 # number of steps
+time = np.zeros(n)
+dt = 1E-4 # timestep
+
+
+position = np.zeros([n,4])
+angle = np.zeros(n)
+q = np.zeros([n,3,3]) # Quadrupole tensor
 
 # Initial condition in the grid
 angle[0] = 0.
 position[0] = ellipse(semilatus(L), eccentricity(E,L), angle[0])
-
+q[0] = qij(position[0,0:3])
 
 # Critical radius to modify dt
 r_crit = 1E-1
 
 # Main Loop
-for i in range(n):
+for i in range(n-1):
   ecc = eccentricity(E,L)
   p = semilatus(L)
   # Check for the merge of the binary system
@@ -91,10 +94,10 @@ for i in range(n):
     print('\n The final separation distance is {:.5e} au.\n'.format(position[-1,3]))
     break
 
-  time = np.append(time, time[len(time)-1] + dt)
-  angle = np.append(angle, phi(L, position[i,3], angle[i]))
-  position = np.append(position, [ellipse(p, ecc, angle[i+1])], axis=0)
-  q = qij(position[i,0:3])
+  time[i+1] = time[i] + dt
+  angle[i+1] = phi(L, position[i,3], angle[i])
+  position[i+1] = ellipse(p, ecc, angle[i+1])
+  q[i+1] = qij(position[i,0:3])
   
   # Check the separation radius to change the time-step
   if position[i+1,3]>1E-1:
@@ -112,6 +115,8 @@ for i in range(n):
   E = E-5*dt
   if L < 0:
     L = 0.
+
+
 
 
 plt.figure(figsize=(10,7))
